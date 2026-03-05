@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <button
+      class="menu-toggle"
+      onclick="document.querySelector('.sidebar').classList.toggle('active')"
+    >
+      ☰
+    </button>
+
+    <div class="sidebar">
+      <div class="logo">
+        <img src="assets/logo.png" alt="IMS Logo" />
+        <h3>IMS</h3>
+      </div>
+      <a href="dashboard.html">📊 Dashboard</a>
+      <a href="stock.html">📦 Stock</a>
+      <a href="sales.html">💰 Sales</a>
+      <a href="labels.html" class="active">🏷 Labels</a>
+      <a href="reports.html">📈 Reports</a>
+      <a onclick="logout()" style="margin-top: auto">🚪 Logout</a>
+    </div>
+
+    <div class="content">
+      <h2>Label Generator</h2>
+
+      <div class="card">
+        <input id="product" placeholder="Product" />
+
+        <input id="weight" placeholder="Net Weight" />
+
+        <input id="mrp" placeholder="MRP" />
+
+        <input id="mfd" type="date" />
+
+        <input id="batch" placeholder="Batch No" />
+
+        <button onclick="generate()">Generate Labels</button>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/docx@7/build/index.js"></script>
+    <script src="js/labels.js"></script>
+    <script>
+      function logout() {
+        localStorage.removeItem("token");
+        window.location = "index.html";
+      }
+    </script>
+  </body>
+</html>

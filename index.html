@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>IMS Login</title>
+
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <img src="assets/logo.png" class="logo" />
+
+        <h2>Inventory Manager</h2>
+
+        <input id="email" placeholder="Email" />
+
+        <input id="password" type="password" placeholder="Password" />
+
+        <button onclick="login()">Login</button>
+
+        <p>
+          <a href="forgot.html">Forgot Password?</a>
+        </p>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+  </body>
+</html>
