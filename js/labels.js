@@ -1,46 +1,58 @@
-function generate(){
+function generate() {
+  const weight = document.getElementById("weight").value;
+  const mrp = document.getElementById("mrp").value;
+  const mfd = document.getElementById("mfd").value;
+  const batch = document.getElementById("batch").value;
 
-const product=document.getElementById("product").value
-const weight=document.getElementById("weight").value
-const mrp=document.getElementById("mrp").value
-const mfd=document.getElementById("mfd").value
-const batch=document.getElementById("batch").value
+  if (!weight || !mrp || !mfd || !batch) {
+    showCustomAlert(
+      "Please fill in all fields (Weight, MRP, MFD, and Batch No).",
+      "Missing Information",
+      "error",
+    );
+    return;
+  }
 
-const {Document,Packer,Paragraph}=docx
+  fetch("assets/labels2.docx")
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(
+          "Could not find labels2.docx template in the assets directory.",
+        );
+      }
+      return res.arrayBuffer();
+    })
+    .then((content) => {
+      const zip = new PizZip(content);
+      const doc = new window.docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+      });
 
-let children=[]
+      doc.render({
+        weight: weight,
+        mrp: mrp,
+        mfd: mfd,
+        batch: batch,
+      });
 
-for(let i=0;i<65;i++){
+      const out = doc.getZip().generate({
+        type: "blob",
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
 
-children.push(
-
-new Paragraph(
-
-`${product}
-Net Wt: ${weight}
-MRP: ${mrp}
-MFD: ${mfd}
-Batch: ${batch}`
-
-)
-
-)
-
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(out);
+      a.download = `Labels.docx`;
+      a.click();
+    })
+    .catch((error) => {
+      console.error(error);
+      showCustomAlert(
+        "There was an issue generating your labels: " + error.message,
+        "Generation Failed",
+        "error",
+      );
+    });
 }
-
-const doc=new Document({
-
-sections:[{children}]
-
-})
-
-Packer.toBlob(doc).then(blob=>{
-
-const a=document.createElement("a")
-a.href=URL.createObjectURL(blob)
-a.download="labels.docx"
-a.click()
-
-})
-
-}   

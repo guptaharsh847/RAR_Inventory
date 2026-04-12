@@ -2,47 +2,115 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width" />
-
     <link rel="stylesheet" href="css/style.css" />
+    <title>IMS Stock</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <meta name="theme-color" content="#4f46e5" />
   </head>
 
   <body>
-    <button
-      class="menu-toggle"
-      onclick="document.querySelector('.sidebar').classList.toggle('active')"
-    >
-      ☰
-    </button>
+    <!-- Mobile Top Header -->
+    <div class="top-header">
+      <button
+        class="menu-toggle"
+        aria-label="Open Menu"
+        onclick="toggleSidebar()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          stroke="currentColor"
+          stroke-width="2"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="header-title">IMS Stock</div>
+    </div>
 
-    <div class="sidebar">
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
       <div class="logo">
         <img src="assets/logo.png" alt="IMS Logo" />
         <h3>IMS</h3>
       </div>
 
-      <a href="dashboard.html">📊 Dashboard</a>
-      <a href="stock.html" class="active">📦 Stock</a>
-      <a href="sales.html">💰 Sales</a>
-      <a href="labels.html">🏷 Labels</a>
-      <a href="reports.html">📈 Reports</a>
+      <a href="dashboard.html"><span>📊</span> Dashboard</a>
+      <a href="stock.html" class="active"><span>📦</span> Stock</a>
+      <a href="sales.html"><span>💰</span> Sales</a>
+      <a href="labels.html"><span>🏷</span> Labels</a>
 
-      <a onclick="logout()" style="margin-top: auto">🚪 Logout</a>
+      <a
+        onclick="logout()"
+        style="margin-top: auto; cursor: pointer; color: #ef4444"
+        ><span>🚪</span> Logout</a
+      >
     </div>
 
     <div class="content">
-      <h2>Stock Entry</h2>
+      <div class="dashboard-header">
+        <div>
+          <h2 class="page-title">Stock</h2>
+          <p class="subtitle">Manage incoming inventory</p>
+        </div>
+        <button class="btn-refresh" onclick="refreshStockData()">
+          🔄 Refresh Data
+        </button>
+      </div>
 
       <div class="card">
-        <label for="product">Product</label>
+        <h3>New Stock Entry</h3>
         <select id="product" title="Select Product"></select>
-
-        <label for="qty">Quantity</label>
-        <input id="qty" placeholder="Quantity" title="Enter Quantity" />
-
-        <label for="date">Date</label>
+        <input
+          id="qty"
+          type="number"
+          placeholder="Quantity"
+          title="Enter Quantity"
+        />
         <input type="date" id="date" title="Select Date" />
+        <button onclick="saveStock()">💾 Save</button>
+      </div>
 
-        <button onclick="saveStock()">Save</button>
+      <div class="card">
+        <h3>Stock Logs</h3>
+        <div class="filter-row">
+          <input type="date" id="startDate" title="Start Date" />
+          <input type="date" id="endDate" title="End Date" />
+          <button onclick="filterStock()">Filter</button>
+          <button onclick="downloadStockExcel()" class="btn-excel">
+            📥 Export Excel
+          </button>
+        </div>
+        <div class="table-container">
+          <table id="stockTable">
+            <thead>
+              <tr>
+                <th>📅 Date</th>
+                <th>📦 Product</th>
+                <th style="text-align: right">📥 Qty In</th>
+              </tr>
+            </thead>
+            <tbody id="stockBody">
+              <tr>
+                <td colspan="3" style="text-align: center">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button id="prevPageBtn" onclick="prevPage()">◀ Previous</button>
+          <span id="pageInfo">Page 1</span>
+          <button id="nextPageBtn" onclick="nextPage()">Next ▶</button>
+        </div>
       </div>
     </div>
 
@@ -52,6 +120,11 @@
       function logout() {
         localStorage.removeItem("token");
         window.location = "index.html";
+      }
+
+      function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.querySelector(".sidebar-overlay").classList.toggle("active");
       }
     </script>
   </body>

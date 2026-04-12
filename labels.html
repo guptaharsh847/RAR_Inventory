@@ -3,52 +3,91 @@
   <head>
     <meta name="viewport" content="width=device-width" />
     <link rel="stylesheet" href="css/style.css" />
+    <title>IMS Labels</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <meta name="theme-color" content="#4f46e5" />
   </head>
   <body>
-    <button
-      class="menu-toggle"
-      onclick="document.querySelector('.sidebar').classList.toggle('active')"
-    >
-      ☰
-    </button>
+    <!-- Mobile Top Header -->
+    <div class="top-header">
+      <button
+        class="menu-toggle"
+        aria-label="Open Menu"
+        onclick="toggleSidebar()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          stroke="currentColor"
+          stroke-width="2"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <div class="header-title">IMS Labels</div>
+    </div>
 
-    <div class="sidebar">
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
       <div class="logo">
         <img src="assets/logo.png" alt="IMS Logo" />
         <h3>IMS</h3>
       </div>
-      <a href="dashboard.html">📊 Dashboard</a>
-      <a href="stock.html">📦 Stock</a>
-      <a href="sales.html">💰 Sales</a>
-      <a href="labels.html" class="active">🏷 Labels</a>
-      <a href="reports.html">📈 Reports</a>
-      <a onclick="logout()" style="margin-top: auto">🚪 Logout</a>
+      <a href="dashboard.html"><span>📊</span> Dashboard</a>
+      <a href="stock.html"><span>📦</span> Stock</a>
+      <a href="sales.html"><span>💰</span> Sales</a>
+      <a href="labels.html" class="active"><span>🏷</span> Labels</a>
+      <a
+        onclick="logout()"
+        style="margin-top: auto; cursor: pointer; color: #ef4444"
+        ><span>🚪</span> Logout</a
+      >
     </div>
 
     <div class="content">
-      <h2>Label Generator</h2>
+      <div class="dashboard-header">
+        <div>
+          <h2 class="page-title">Label Generator</h2>
+          <p class="subtitle">Generate custom labels from template</p>
+        </div>
+      </div>
 
       <div class="card">
-        <input id="product" placeholder="Product" />
-
-        <input id="weight" placeholder="Net Weight" />
-
-        <input id="mrp" placeholder="MRP" />
-
-        <input id="mfd" type="date" />
-
-        <input id="batch" placeholder="Batch No" />
-
-        <button onclick="generate()">Generate Labels</button>
+        <h3>Label Details</h3>
+        <input
+          id="weight"
+          placeholder="Net Weight (e.g. 500g)"
+          title="Enter Net Weight"
+        />
+        <input id="mrp" placeholder="MRP Price" title="Enter MRP" />
+        <input id="mfd" type="date" title="Select Manufacturing Date" />
+        <input id="batch" placeholder="Batch No" title="Enter Batch Number" />
+        <button onclick="generate()">🖨️ Generate Labels</button>
       </div>
     </div>
 
-    <script src="https://unpkg.com/docx@7/build/index.js"></script>
+    <script src="https://unpkg.com/pizzip@3.1.7/dist/pizzip.js"></script>
+    <script src="https://unpkg.com/docxtemplater@3.40.2/build/docxtemplater.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/labels.js"></script>
     <script>
       function logout() {
         localStorage.removeItem("token");
         window.location = "index.html";
+      }
+
+      function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("active");
+        document.querySelector(".sidebar-overlay").classList.toggle("active");
       }
     </script>
   </body>

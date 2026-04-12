@@ -14,6 +14,9 @@
       {
         "document-title": "off"
       }
-    ]
+    ],
+    "apple-touch-icons": "off",
+    "no-inline-styles": "off",
+    "compat-api/html": "off"
   }
 }

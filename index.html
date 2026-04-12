@@ -3,30 +3,94 @@
   <head>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>IMS Login</title>
-
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <meta name="theme-color" content="#4f46e5" />
   </head>
 
   <body>
     <div class="login-container">
-      <div class="login-card">
-        <img src="assets/logo.png" class="logo" />
+      <div class="login-left">
+        <div class="login-card">
+          <img src="assets/logo.png" class="logo" alt="IMS Logo" />
+          <h2>Welcome Back</h2>
+          <p class="subtitle">Log in to manage your inventory</p>
+          <input id="email" type="email" placeholder="Email Address" />
+          <input id="password" type="password" placeholder="Password" />
+          <button onclick="login()">Sign In</button>
+          <p>
+            <a href="forgot.html">Forgot Password?</a>
+          </p>
+        </div>
+      </div>
 
-        <h2>Inventory Manager</h2>
+      <!-- Image Carousel Container -->
+      <div class="login-right">
+        <img
+          src="assets/images/img1.jpeg"
+          class="carousel-slide active"
+          alt="Slide 1"
+        />
+        <img
+          src="assets/images/img2.jpeg"
+          class="carousel-slide"
+          alt="Slide 2"
+        />
+      </div>
+    </div>
 
-        <input id="email" placeholder="Email" />
-
-        <input id="password" type="password" placeholder="Password" />
-
-        <button onclick="login()">Login</button>
-
-        <p>
-          <a href="forgot.html">Forgot Password?</a>
-        </p>
+    <!-- PWA Install Popup -->
+    <div id="pwaPopup" class="pwa-popup">
+      <div class="pwa-info">
+        <img src="assets/logo.png" alt="App Icon" />
+        <div class="pwa-text">
+          <h4>Install IMS</h4>
+          <p>Add to home screen</p>
+        </div>
+      </div>
+      <div class="pwa-actions">
+        <button id="pwaInstallBtn">Install</button>
+        <button id="pwaCloseBtn" class="pwa-close">✖</button>
       </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script>
+      // Carousel Logic
+      const slides = document.querySelectorAll(".carousel-slide");
+      let currentSlide = 0;
+      if (slides.length > 0) {
+        setInterval(() => {
+          slides[currentSlide].classList.remove("active");
+          currentSlide = (currentSlide + 1) % slides.length;
+          slides[currentSlide].classList.add("active");
+        }, 5000); // 5 seconds
+      }
+
+      let deferredPrompt;
+      const pwaPopup = document.getElementById("pwaPopup");
+
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        setTimeout(() => pwaPopup.classList.add("show"), 1000);
+      });
+
+      document
+        .getElementById("pwaInstallBtn")
+        .addEventListener("click", async () => {
+          if (deferredPrompt) {
+            pwaPopup.classList.remove("show");
+            deferredPrompt.prompt();
+            deferredPrompt = null;
+          }
+        });
+
+      document.getElementById("pwaCloseBtn").addEventListener("click", () => {
+        pwaPopup.classList.remove("show");
+      });
+    </script>
   </body>
 </html>
