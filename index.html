@@ -19,24 +19,15 @@
           <input id="email" type="email" placeholder="Email Address" />
           <input id="password" type="password" placeholder="Password" />
           <button onclick="login()">Sign In</button>
-          <p>
+          <!-- <p>
             <a href="forgot.html">Forgot Password?</a>
-          </p>
+          </p> -->
         </div>
       </div>
 
       <!-- Image Carousel Container -->
-      <div class="login-right">
-        <img
-          src="assets/images/img1.jpeg"
-          class="carousel-slide active"
-          alt="Slide 1"
-        />
-        <img
-          src="assets/images/img2.jpeg"
-          class="carousel-slide"
-          alt="Slide 2"
-        />
+      <div class="login-right" id="carouselContainer">
+        <!-- Images injected dynamically via JavaScript -->
       </div>
     </div>
 
@@ -59,15 +50,25 @@
     <script src="js/auth.js"></script>
     <script>
       // Carousel Logic
-      const slides = document.querySelectorAll(".carousel-slide");
+      const carouselContainer = document.getElementById("carouselContainer");
+      let carouselHTML = "";
+
+      for (let i = 1; i <= 6; i++) {
+        // Change 'img${i}.jpeg' to '${i}.jpeg' if your files are strictly named 1.jpeg, 2.jpeg, etc.
+        carouselHTML += `<img src="assets/images/img${i}.jpeg" class="carousel-slide ${i === 1 ? "active" : ""}" alt="Slide ${i}" onerror="this.remove()" />`;
+      }
+      carouselContainer.innerHTML = carouselHTML;
+
       let currentSlide = 0;
-      if (slides.length > 0) {
-        setInterval(() => {
+      setInterval(() => {
+        const slides = document.querySelectorAll(".carousel-slide");
+        if (slides.length > 0) {
+          if (currentSlide >= slides.length) currentSlide = 0; // Prevent out-of-bounds
           slides[currentSlide].classList.remove("active");
           currentSlide = (currentSlide + 1) % slides.length;
           slides[currentSlide].classList.add("active");
-        }, 5000); // 5 seconds
-      }
+        }
+      }, 3000); // 3 seconds
 
       let deferredPrompt;
       const pwaPopup = document.getElementById("pwaPopup");
