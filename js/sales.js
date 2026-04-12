@@ -4,6 +4,7 @@ const cachedProducts = localStorage.getItem("products");
 let salesData = [];
 let filteredSales = [];
 let currentPage = 1;
+let editingSalesRow = null;
 const rowsPerPage = 10;
 
 if (cachedProducts) {
@@ -27,25 +28,77 @@ function renderProducts(data) {
 }
 
 function saveSales() {
+  const actionType = editingSalesRow ? "update_sales" : "sales";
+  const payload = {
+    action: actionType,
+    product: document.getElementById("product").value,
+    qty: document.getElementById("qty").value,
+    amount: document.getElementById("amount").value,
+    payment: document.getElementById("payment").value,
+    date: document.getElementById("date").value,
+  };
+
+  if (editingSalesRow) payload.row = editingSalesRow;
+
   fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({
-      action: "sales",
-      product: document.getElementById("product").value,
-      qty: document.getElementById("qty").value,
-      amount: document.getElementById("amount").value,
-      payment: document.getElementById("payment").value,
-      date: document.getElementById("date").value,
-    }),
+    body: JSON.stringify(payload),
   }).then(() => {
     showCustomAlert(
-      "The sale has been successfully recorded.",
-      "Sale Saved!",
+      editingSalesRow
+        ? "The sale has been successfully updated."
+        : "The sale has been successfully recorded.",
+      editingSalesRow ? "Sale Updated!" : "Sale Saved!",
       "success",
     );
     document.getElementById("qty").value = "";
     document.getElementById("amount").value = "";
+
+    // Reset Edit State
+    editingSalesRow = null;
+    document.getElementById("saveSalesBtn").innerHTML = "💾 Save Sale";
     loadSalesData(true); // Force refresh on save
+  });
+}
+
+function editSales(row) {
+  const item = salesData.find((i) => i.row === row);
+  if (!item) return;
+
+  document.getElementById("product").value = item.product;
+  document.getElementById("qty").value = item.qty;
+  document.getElementById("amount").value = item.amount;
+  document.getElementById("payment").value = item.payment;
+
+  let d = parseCustomDate(item.date);
+  if (!isNaN(d)) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
+  } else {
+    document.getElementById("date").value = item.date;
+  }
+
+  editingSalesRow = row;
+  document.getElementById("saveSalesBtn").innerHTML = "🔄 Update Sale";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteSales(row) {
+  if (
+    !confirm(
+      "Are you sure you want to delete this sale entry? This cannot be undone.",
+    )
+  )
+    return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "delete_sales", row: row }),
+  }).then(() => {
+    showCustomAlert("The sale entry has been deleted.", "Deleted", "success");
+    loadSalesData(true);
   });
 }
 
@@ -63,7 +116,7 @@ function loadSalesData(force = false) {
   }
 
   document.getElementById("salesBody").innerHTML =
-    `<tr><td colspan="5" style="text-align: center;">Loading...</td></tr>`;
+    `<tr><td colspan="6" style="text-align: center;">Loading...</td></tr>`;
   fetch(API_URL + "?action=sales")
     .then((res) => res.json())
     .then((data) => {
@@ -98,7 +151,7 @@ function renderSalesTable() {
     currentPage === totalPages || filteredSales.length === 0;
 
   if (filteredSales.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">No records found.</td></tr>`;
     return;
   }
 
@@ -117,6 +170,10 @@ function renderSalesTable() {
         <td style="text-align: right; font-weight: 500;">${r.qty}</td>
         <td style="text-align: right;">${r.amount}</td>
         <td><span class="badge">${r.payment}</span></td>
+        <td style="text-align: center;">
+          <button onclick="editSales(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none;" title="Edit">✏️</button>
+          <button onclick="deleteSales(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--danger); color: var(--danger); box-shadow: none;" title="Delete">🗑️</button>
+        </td>
       </tr>`;
   });
 }

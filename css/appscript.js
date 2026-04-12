@@ -13,6 +13,10 @@ function doPost(e) {
   if (data.action == "login") return login(data);
   if (data.action == "stock") return stock(data);
   if (data.action == "sales") return addSales(data);
+  if (data.action == "delete_stock") return deleteRow(data, "STOCK_ENTRY");
+  if (data.action == "delete_sales") return deleteRow(data, "SALES");
+  if (data.action == "update_stock") return updateStock(data);
+  if (data.action == "update_sales") return updateSales(data);
 }
 
 function login(data) {
@@ -52,6 +56,30 @@ function stock(data) {
   return json({ status: "saved" });
 }
 
+function deleteRow(data, sheetName) {
+  const sheet = ss.getSheetByName(sheetName);
+  sheet.deleteRow(data.row);
+  return json({ status: "deleted" });
+}
+
+function updateStock(data) {
+  const sheet = ss.getSheetByName("STOCK_ENTRY");
+  sheet
+    .getRange(data.row, 2, 1, 3)
+    .setValues([[data.product, data.qty, data.date]]);
+  return json({ status: "updated" });
+}
+
+function updateSales(data) {
+  const sheet = ss.getSheetByName("SALES");
+  sheet
+    .getRange(data.row, 2, 1, 5)
+    .setValues([
+      [data.product, data.qty, data.amount, data.payment, data.date],
+    ]);
+  return json({ status: "updated" });
+}
+
 function getStockLogs() {
   const sheet = ss.getSheetByName("STOCK_ENTRY");
   const rows = sheet.getDataRange().getValues();
@@ -60,6 +88,7 @@ function getStockLogs() {
 
   for (let i = 1; i < rows.length; i++) {
     list.push({
+      row: i + 1,
       product: rows[i][1],
       qty: rows[i][2],
       date: rows[i][3],
@@ -92,6 +121,7 @@ function sales() {
 
   for (let i = 1; i < rows.length; i++) {
     list.push({
+      row: i + 1,
       product: rows[i][1],
       qty: rows[i][2],
       amount: rows[i][3],

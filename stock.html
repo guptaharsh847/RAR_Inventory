@@ -77,7 +77,7 @@
           title="Enter Quantity"
         />
         <input type="date" id="date" title="Select Date" />
-        <button onclick="saveStock()">💾 Save</button>
+        <button id="saveStockBtn" onclick="saveStock()">💾 Save</button>
       </div>
 
       <div class="card">
@@ -97,11 +97,12 @@
                 <th>📅 Date</th>
                 <th>📦 Product</th>
                 <th style="text-align: right">📥 Qty In</th>
+                <th style="text-align: center">⚙️ Actions</th>
               </tr>
             </thead>
             <tbody id="stockBody">
               <tr>
-                <td colspan="3" style="text-align: center">Loading...</td>
+                <td colspan="4" style="text-align: center">Loading...</td>
               </tr>
             </tbody>
           </table>

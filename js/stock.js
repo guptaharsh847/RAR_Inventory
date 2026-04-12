@@ -4,6 +4,7 @@ const cachedProducts = localStorage.getItem("products");
 let stockData = [];
 let filteredStock = [];
 let currentPage = 1;
+let editingStockRow = null;
 const rowsPerPage = 10;
 
 if (cachedProducts) {
@@ -27,23 +28,72 @@ function renderProducts(data) {
 }
 
 function saveStock() {
+  const actionType = editingStockRow ? "update_stock" : "stock";
+  const payload = {
+    action: actionType,
+    product: document.getElementById("product").value,
+    qty: document.getElementById("qty").value,
+    date: document.getElementById("date").value,
+  };
+
+  if (editingStockRow) payload.row = editingStockRow;
+
   fetch(API_URL, {
     method: "POST",
-
-    body: JSON.stringify({
-      action: "stock",
-      product: document.getElementById("product").value,
-      qty: document.getElementById("qty").value,
-      date: document.getElementById("date").value,
-    }),
+    body: JSON.stringify(payload),
   }).then(() => {
     showCustomAlert(
-      "The stock entry has been successfully recorded.",
-      "Stock Saved!",
+      editingStockRow
+        ? "The stock entry has been updated."
+        : "The stock entry has been successfully recorded.",
+      editingStockRow ? "Stock Updated!" : "Stock Saved!",
       "success",
     );
     document.getElementById("qty").value = "";
+
+    // Reset Edit State
+    editingStockRow = null;
+    document.getElementById("saveStockBtn").innerHTML = "💾 Save";
     loadStockData(true); // Force refresh on save
+  });
+}
+
+function editStock(row) {
+  const item = stockData.find((i) => i.row === row);
+  if (!item) return;
+
+  document.getElementById("product").value = item.product;
+  document.getElementById("qty").value = item.qty;
+
+  let d = parseCustomDate(item.date);
+  if (!isNaN(d)) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
+  } else {
+    document.getElementById("date").value = item.date;
+  }
+
+  editingStockRow = row;
+  document.getElementById("saveStockBtn").innerHTML = "🔄 Update Entry";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteStock(row) {
+  if (
+    !confirm(
+      "Are you sure you want to delete this stock entry? This cannot be undone.",
+    )
+  )
+    return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "delete_stock", row: row }),
+  }).then(() => {
+    showCustomAlert("The stock entry has been deleted.", "Deleted", "success");
+    loadStockData(true);
   });
 }
 
@@ -61,7 +111,7 @@ function loadStockData(force = false) {
   }
 
   document.getElementById("stockBody").innerHTML =
-    `<tr><td colspan="3" style="text-align: center;">Loading...</td></tr>`;
+    `<tr><td colspan="4" style="text-align: center;">Loading...</td></tr>`;
   fetch(API_URL + "?action=stock")
     .then((res) => res.json())
     .then((data) => {
@@ -96,7 +146,7 @@ function renderStockTable() {
     currentPage === totalPages || filteredStock.length === 0;
 
   if (filteredStock.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center;">No records found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No records found.</td></tr>`;
     return;
   }
 
@@ -113,6 +163,10 @@ function renderStockTable() {
         <td>${dateStr}</td>
         <td>${r.product}</td>
         <td style="text-align: right; font-weight: 500; color: var(--success);">${r.qty}</td>
+        <td style="text-align: center;">
+          <button onclick="editStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none;" title="Edit">✏️</button>
+          <button onclick="deleteStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--danger); color: var(--danger); box-shadow: none;" title="Delete">🗑️</button>
+        </td>
       </tr>`;
   });
 }
