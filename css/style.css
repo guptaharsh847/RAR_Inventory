@@ -77,29 +77,36 @@ select:focus {
 /* PIN input styles */
 .pin-container {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 24px;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
 .pin-box {
-  width: 50px;
-  height: 60px;
+  width: 48px;
+  height: 56px;
+  flex: 0 0 48px; /* Force exact width to prevent stretching */
   font-size: 1.5rem;
   text-align: center;
   padding: 0;
   margin-bottom: 0;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border); /* Slightly thicker border */
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--surface);
   color: var(--text-main);
   font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.pin-box:focus {
+  transform: translateY(-2px);
 }
 
 @media (max-width: 480px) {
   .pin-box {
-    width: 42px;
-    height: 52px;
+    width: 40px;
+    height: 50px;
+    flex: 0 0 40px;
     font-size: 1.25rem;
   }
   .pin-container {
@@ -392,6 +399,7 @@ tbody tr:hover {
   .table-container {
     border: none;
     background: transparent;
+    overflow-x: hidden;
   }
   table,
   thead,
@@ -402,6 +410,10 @@ tbody tr:hover {
     display: block;
     width: 100%;
   }
+  table {
+    min-width: 100% !important;
+    table-layout: fixed;
+  }
   thead {
     display: none;
   }
@@ -411,7 +423,7 @@ tbody tr:hover {
     border-radius: 12px;
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
-    padding: 12px 16px;
+    padding: 12px;
     position: relative;
     display: flex;
     flex-wrap: wrap;
@@ -426,6 +438,7 @@ tbody tr:hover {
     border: none !important;
     text-align: right !important;
     white-space: normal;
+    word-break: break-word;
   }
   td::before {
     display: none !important;
@@ -493,7 +506,7 @@ tbody tr:hover {
     padding-top: 8px;
     border-top: 1px dashed var(--border) !important;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 4px;
   }
   td[data-label="Payment"]::before {
     content: "Payment: ";
@@ -509,10 +522,17 @@ tbody tr:hover {
     padding-top: 8px;
     border-top: 1px dashed var(--border) !important;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 4px;
   }
   #stockTable td[data-label="Actions"] {
     width: 100%;
+  }
+  td[data-label="Actions"] button {
+    padding: 6px 8px !important;
+    margin: 0 2px !important;
+  }
+  .card {
+    padding: 16px;
   }
 
   /* Standard Full Width for Fallbacks */
