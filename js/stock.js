@@ -165,10 +165,10 @@ function renderStockTable() {
 
     tbody.innerHTML += `
       <tr>
-        <td>${dateStr}</td>
-        <td>${r.product}</td>
-        <td style="text-align: right; font-weight: 500; color: var(--success);">${r.qty}</td>
-        <td style="text-align: center;">
+        <td data-label="Date">${dateStr}</td>
+        <td data-label="Product">${r.product}</td>
+        <td data-label="Qty In" style="text-align: right; font-weight: 500; color: var(--success);">${r.qty}</td>
+        <td data-label="Actions" style="text-align: center;">
           <button onclick="editStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none; display: inline-flex; align-items: center; justify-content: center;" title="Edit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           </button>

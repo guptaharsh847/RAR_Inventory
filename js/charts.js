@@ -87,6 +87,6 @@ function processInventoryData(data) {
   const tbody = document.getElementById("inventoryBody");
   tbody.innerHTML = "";
   data.forEach((item) => {
-    tbody.innerHTML += `<tr><td>${item.product}</td><td style="text-align: right; font-weight: 500;">${item.qty}</td></tr>`;
+    tbody.innerHTML += `<tr><td data-label="Product">${item.product}</td><td data-label="Qty" style="text-align: right; font-weight: 600; color: var(--success);">${item.qty}</td></tr>`;
   });
 }
