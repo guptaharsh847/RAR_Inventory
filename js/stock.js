@@ -53,7 +53,8 @@ function saveStock() {
 
     // Reset Edit State
     editingStockRow = null;
-    document.getElementById("saveStockBtn").innerHTML = "💾 Save";
+    document.getElementById("saveStockBtn").innerHTML =
+      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save`;
     loadStockData(true); // Force refresh on save
   });
 }
@@ -76,7 +77,8 @@ function editStock(row) {
   }
 
   editingStockRow = row;
-  document.getElementById("saveStockBtn").innerHTML = "🔄 Update Entry";
+  document.getElementById("saveStockBtn").innerHTML =
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Update Entry`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -164,8 +166,12 @@ function renderStockTable() {
         <td>${r.product}</td>
         <td style="text-align: right; font-weight: 500; color: var(--success);">${r.qty}</td>
         <td style="text-align: center;">
-          <button onclick="editStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none;" title="Edit">✏️</button>
-          <button onclick="deleteStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--danger); color: var(--danger); box-shadow: none;" title="Delete">🗑️</button>
+          <button onclick="editStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none; display: inline-flex; align-items: center; justify-content: center;" title="Edit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
+          <button onclick="deleteStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--danger); color: var(--danger); box-shadow: none; display: inline-flex; align-items: center; justify-content: center;" title="Delete">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
         </td>
       </tr>`;
   });
