@@ -1,3 +1,21 @@
+// Session validation for 7-day login
+const pageName = window.location.pathname.split("/").pop();
+const isLoginPage = pageName === "index.html" || pageName === "";
+
+const token = localStorage.getItem("token");
+const expiry = localStorage.getItem("token_expiry");
+const isValidSession = token && expiry && Date.now() < parseInt(expiry);
+
+if (!isLoginPage && !isValidSession) {
+  // Redirect to index if session is invalid and not already on index
+  localStorage.removeItem("token");
+  localStorage.removeItem("token_expiry");
+  window.location.href = "index.html";
+} else if (isLoginPage && isValidSession) {
+  // If already logged in and on index page, skip to dashboard
+  window.location.href = "dashboard.html";
+}
+
 const API_URL =
   "https://script.google.com/macros/s/AKfycbyYlRc_dtcCDZaWxMGrXWh8bnuhkLjL37gDXyYiiEyWvywahO57IbPZWt-RVydqGKI/exec";
 

@@ -24,7 +24,7 @@ function login(data) {
   const rows = sheet.getDataRange().getValues();
 
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] == data.email && rows[i][1] == data.password) {
+    if (rows[i][1] == data.password) {
       return json({ status: "success", token: Utilities.getUuid() });
     }
   }

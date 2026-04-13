@@ -74,6 +74,39 @@ select:focus {
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
+/* PIN input styles */
+.pin-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pin-box {
+  width: 50px;
+  height: 60px;
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 0;
+  margin-bottom: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .pin-box {
+    width: 42px;
+    height: 52px;
+    font-size: 1.25rem;
+  }
+  .pin-container {
+    gap: 8px;
+  }
+}
+
 button {
   width: 100%;
   padding: 14px 16px;
