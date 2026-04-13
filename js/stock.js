@@ -50,6 +50,8 @@ function saveStock() {
       "success",
     );
     document.getElementById("qty").value = "";
+    document.getElementById("date").value = "";
+    document.getElementById("date").type = "text"; // Restore placeholder
 
     // Reset Edit State
     editingStockRow = null;
@@ -65,6 +67,7 @@ function editStock(row) {
 
   document.getElementById("product").value = item.product;
   document.getElementById("qty").value = item.qty;
+  document.getElementById("date").type = "date"; // Force correct date handling type
 
   let d = parseCustomDate(item.date);
   if (!isNaN(d)) {

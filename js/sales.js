@@ -53,6 +53,8 @@ function saveSales() {
     );
     document.getElementById("qty").value = "";
     document.getElementById("amount").value = "";
+    document.getElementById("date").value = "";
+    document.getElementById("date").type = "text"; // Restore placeholder
 
     // Reset Edit State
     editingSalesRow = null;
@@ -70,6 +72,7 @@ function editSales(row) {
   document.getElementById("qty").value = item.qty;
   document.getElementById("amount").value = item.amount;
   document.getElementById("payment").value = item.payment;
+  document.getElementById("date").type = "date"; // Force correct date handling type
 
   let d = parseCustomDate(item.date);
   if (!isNaN(d)) {
