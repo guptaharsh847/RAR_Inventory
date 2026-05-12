@@ -1,5 +1,6 @@
 const productSelect = document.getElementById("product");
 const cachedProducts = localStorage.getItem("products");
+const cachedWeights = localStorage.getItem("weights");
 
 let stockData = [];
 let filteredStock = [];
@@ -18,6 +19,17 @@ fetch(API_URL + "?action=products")
     if (!cachedProducts) renderProducts(data);
   });
 
+if (cachedWeights) {
+  renderWeights(JSON.parse(cachedWeights));
+}
+
+fetch(API_URL + "?action=weights")
+  .then((res) => res.json())
+  .then((data) => {
+    localStorage.setItem("weights", JSON.stringify(data));
+    if (!cachedWeights) renderWeights(data);
+  });
+
 // Load stock data automatically
 loadStockData();
 
@@ -27,38 +39,68 @@ function renderProducts(data) {
   productSelect.innerHTML = html;
 }
 
+function renderWeights(data) {
+  let html = `<option value="" disabled selected>Select Weight</option>`;
+  data.forEach((w) => (html += `<option value="${w}">${w}</option>`));
+  const weightSelect = document.getElementById("weight");
+  if (weightSelect) weightSelect.innerHTML = html;
+}
+
 function saveStock() {
   const actionType = editingStockRow ? "update_stock" : "stock";
   const payload = {
     action: actionType,
     product: document.getElementById("product").value,
+    weight: document.getElementById("weight")
+      ? document.getElementById("weight").value
+      : "",
     qty: document.getElementById("qty").value,
     date: document.getElementById("date").value,
   };
 
   if (editingStockRow) payload.row = editingStockRow;
 
+  const saveBtn = document.getElementById("saveStockBtn");
+  const originalBtnHtml = saveBtn.innerHTML;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; vertical-align: middle; margin-right: 6px;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Saving...`;
+
   fetch(API_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-  }).then(() => {
-    showCustomAlert(
-      editingStockRow
-        ? "The stock entry has been updated."
-        : "The stock entry has been successfully recorded.",
-      editingStockRow ? "Stock Updated!" : "Stock Saved!",
-      "success",
-    );
-    document.getElementById("qty").value = "";
-    document.getElementById("date").value = "";
-    document.getElementById("date").type = "text"; // Restore placeholder
+  })
+    .then((res) => {
+      showCustomAlert(
+        editingStockRow
+          ? "The stock entry has been updated."
+          : "The stock entry has been successfully recorded.",
+        editingStockRow ? "Stock Updated!" : "Stock Saved!",
+        "success",
+      );
+      document.getElementById("qty").value = "";
+      if (document.getElementById("weight"))
+        document.getElementById("weight").value = "";
+      document.getElementById("date").value = "";
+      document.getElementById("date").type = "text"; // Restore placeholder
 
-    // Reset Edit State
-    editingStockRow = null;
-    document.getElementById("saveStockBtn").innerHTML =
-      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save`;
-    loadStockData(true); // Force refresh on save
-  });
+      // Reset Edit State
+      editingStockRow = null;
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save`;
+
+      localStorage.removeItem("inventoryData"); // Invalidate inventory cache
+      localStorage.removeItem("stockData");
+      loadStockData(true); // Force refresh on save
+    })
+    .catch(() => {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnHtml;
+      showCustomAlert(
+        "Error saving stock entry. Please try again.",
+        "Error",
+        "error",
+      );
+    });
 }
 
 function editStock(row) {
@@ -66,6 +108,8 @@ function editStock(row) {
   if (!item) return;
 
   document.getElementById("product").value = item.product;
+  if (document.getElementById("weight"))
+    document.getElementById("weight").value = item.weight || "";
   document.getElementById("qty").value = item.qty;
   document.getElementById("date").type = "date"; // Force correct date handling type
 
@@ -98,6 +142,8 @@ function deleteStock(row) {
     body: JSON.stringify({ action: "delete_stock", row: row }),
   }).then(() => {
     showCustomAlert("The stock entry has been deleted.", "Deleted", "success");
+    localStorage.removeItem("inventoryData"); // Invalidate inventory cache
+    localStorage.removeItem("stockData");
     loadStockData(true);
   });
 }
@@ -162,11 +208,12 @@ function renderStockTable() {
   pageData.forEach((r) => {
     const d = parseCustomDate(r.date);
     const dateStr = !isNaN(d) ? d.toLocaleDateString("en-GB") : r.date;
+    const productDisplay = r.weight ? `${r.product} (${r.weight})` : r.product;
 
     tbody.innerHTML += `
       <tr>
         <td data-label="Date">${dateStr}</td>
-        <td data-label="Product">${r.product}</td>
+        <td data-label="Product">${productDisplay}</td>
         <td data-label="Qty In" style="text-align: right; font-weight: 500; color: var(--success);">${r.qty}</td>
         <td data-label="Actions" style="text-align: center;">
           <button onclick="editStock(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none; display: inline-flex; align-items: center; justify-content: center;" title="Edit">
@@ -214,11 +261,11 @@ function nextPage() {
 }
 
 function downloadStockExcel() {
-  let csv = ["Date,Product,Qty"];
+  let csv = ["Date,Product,Weight,Qty"];
   filteredStock.forEach((r) => {
     const d = parseCustomDate(r.date);
     const dateStr = !isNaN(d) ? d.toLocaleDateString("en-GB") : r.date;
-    csv.push(`"${dateStr}","${r.product}","${r.qty}"`);
+    csv.push(`"${dateStr}","${r.product}","${r.weight || ""}","${r.qty}"`);
   });
   const blob = new Blob([csv.join("\n")], { type: "text/csv" });
   const a = document.createElement("a");

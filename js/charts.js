@@ -50,7 +50,7 @@ function processSalesData(data, selectedMonth) {
       }
     }
 
-    if (!isNaN(d)) {
+    if (!isNaN(d.getTime())) {
       saleYearMonth =
         d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
     } else {
@@ -75,6 +75,10 @@ function loadInventory(force = false) {
     return;
   }
 
+  const tbody = document.getElementById("inventoryBody");
+  if (tbody)
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align: center;">Refreshing...</td></tr>`;
+
   fetch(API_URL + "?action=inventory")
     .then((res) => res.json())
     .then((data) => {
@@ -87,6 +91,9 @@ function processInventoryData(data) {
   const tbody = document.getElementById("inventoryBody");
   tbody.innerHTML = "";
   data.forEach((item) => {
-    tbody.innerHTML += `<tr><td data-label="Product">${item.product}</td><td data-label="Qty" style="text-align: right; font-weight: 600; color: var(--success);">${item.qty}</td></tr>`;
+    const productDisplay = item.weight
+      ? `${item.product} (${item.weight})`
+      : item.product;
+    tbody.innerHTML += `<tr><td data-label="Product">${productDisplay}</td><td data-label="Qty" style="text-align: right; font-weight: 600; color: var(--success);">${item.qty}</td></tr>`;
   });
 }
