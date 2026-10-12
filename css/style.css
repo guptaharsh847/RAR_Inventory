@@ -8,7 +8,7 @@
   --border: #e2e8f0;
   --sidebar-bg: #0f172a;
   --sidebar-text: #94a3b8;
-  --success: #10b981;
+  --success: #0284c7; /* Updated to Standard Azure Blue */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg:
@@ -74,6 +74,46 @@ select:focus {
   box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
+/* PIN input styles */
+.pin-container {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.pin-box {
+  width: 48px;
+  height: 56px;
+  flex: 0 0 48px; /* Force exact width to prevent stretching */
+  font-size: 1.5rem;
+  text-align: center;
+  padding: 0;
+  margin-bottom: 0;
+  border: 2px solid var(--border); /* Slightly thicker border */
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-main);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.pin-box:focus {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+  .pin-box {
+    width: 40px;
+    height: 50px;
+    flex: 0 0 40px;
+    font-size: 1.25rem;
+  }
+  .pin-container {
+    gap: 8px;
+  }
+}
+
 button {
   width: 100%;
   padding: 14px 16px;
@@ -95,6 +135,19 @@ button:hover {
 
 button:active {
   transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Sidebar */
@@ -166,8 +219,8 @@ button:active {
   right: 0;
   height: 70px;
   background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   display: none;
   align-items: center;
   padding: 0 20px;
@@ -273,13 +326,13 @@ button:active {
 }
 
 .btn-excel {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
   margin-left: auto;
 }
 
 .btn-excel:hover {
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
 }
 
 @media (max-width: 768px) {
@@ -339,6 +392,156 @@ tbody tr {
 
 tbody tr:hover {
   background-color: #f8fafc;
+}
+
+/* Responsive Mobile Tables (Expandable Cards) */
+@media (max-width: 768px) {
+  .table-container {
+    border: none;
+    background: transparent;
+    overflow-x: hidden;
+  }
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
+    display: block;
+    width: 100%;
+  }
+  table {
+    min-width: 100% !important;
+    table-layout: fixed;
+  }
+  thead {
+    display: none;
+  }
+  tr {
+    background: var(--surface);
+    margin-bottom: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    padding: 12px;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border: none !important;
+    text-align: right !important;
+    white-space: normal;
+    word-break: break-word;
+  }
+  td::before {
+    display: none !important;
+  }
+
+  /* Date (Top left, small) */
+  td[data-label="Date"] {
+    width: 100%;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    order: 1;
+    margin-bottom: 4px;
+    text-align: left !important;
+  }
+
+  /* Product (Large, Bold, Left) */
+  td[data-label="Product"] {
+    width: 60%;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    order: 2;
+    text-align: left !important;
+  }
+
+  /* Amount / Qty In (Large, Bold, Right) */
+  td[data-label="Amount"],
+  td[data-label="Qty In"],
+  #inventoryTable td[data-label="Qty"] {
+    width: 40%;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+    order: 3;
+    justify-content: flex-end;
+  }
+  td[data-label="Qty In"],
+  #inventoryTable td[data-label="Qty"] {
+    color: var(--success) !important;
+  }
+
+  /* Sub Qty for Sales (Under Product) */
+  #salesTable td[data-label="Qty"] {
+    width: 100%;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    order: 4;
+    margin-top: 2px;
+    justify-content: flex-start;
+    text-align: left !important;
+  }
+  #salesTable td[data-label="Qty"]::before {
+    content: "Qty: ";
+    display: inline !important;
+    margin-right: 4px;
+    font-weight: 500;
+  }
+
+  /* Bottom Row Content (Payment & Actions) */
+  td[data-label="Payment"] {
+    width: 50%;
+    display: flex;
+    order: 5;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border) !important;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  td[data-label="Payment"]::before {
+    content: "Payment: ";
+    display: inline !important;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  td[data-label="Actions"] {
+    width: 50%;
+    display: flex;
+    order: 6;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border) !important;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  #stockTable td[data-label="Actions"] {
+    width: 100%;
+  }
+  td[data-label="Actions"] button {
+    padding: 6px 8px !important;
+    margin: 0 2px !important;
+  }
+  .card {
+    padding: 16px;
+  }
+
+  /* Standard Full Width for Fallbacks */
+  td[colspan] {
+    width: 100%;
+    justify-content: center !important;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
 }
 
 /* Pagination */
@@ -492,8 +695,8 @@ tbody tr:hover {
   margin: 0 auto;
   max-width: 420px;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border-radius: 20px;
   padding: 16px 20px;
   box-shadow:
@@ -580,8 +783,8 @@ tbody tr:hover {
     position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
     z-index: 999;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -613,8 +816,8 @@ tbody tr:hover {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
   align-items: center;

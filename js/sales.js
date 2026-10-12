@@ -1,5 +1,6 @@
 const productSelect = document.getElementById("product");
 const cachedProducts = localStorage.getItem("products");
+const cachedWeights = localStorage.getItem("weights");
 
 let salesData = [];
 let filteredSales = [];
@@ -18,6 +19,17 @@ fetch(API_URL + "?action=products")
     if (!cachedProducts) renderProducts(data);
   });
 
+if (cachedWeights) {
+  renderWeights(JSON.parse(cachedWeights));
+}
+
+fetch(API_URL + "?action=weights")
+  .then((res) => res.json())
+  .then((data) => {
+    localStorage.setItem("weights", JSON.stringify(data));
+    if (!cachedWeights) renderWeights(data);
+  });
+
 // Load sales data automatically
 loadSalesData();
 
@@ -27,11 +39,21 @@ function renderProducts(data) {
   productSelect.innerHTML = html;
 }
 
+function renderWeights(data) {
+  let html = `<option value="" disabled selected>Select Weight</option>`;
+  data.forEach((w) => (html += `<option value="${w}">${w}</option>`));
+  const weightSelect = document.getElementById("weight");
+  if (weightSelect) weightSelect.innerHTML = html;
+}
+
 function saveSales() {
   const actionType = editingSalesRow ? "update_sales" : "sales";
   const payload = {
     action: actionType,
     product: document.getElementById("product").value,
+    weight: document.getElementById("weight")
+      ? document.getElementById("weight").value
+      : "",
     qty: document.getElementById("qty").value,
     amount: document.getElementById("amount").value,
     payment: document.getElementById("payment").value,
@@ -40,25 +62,44 @@ function saveSales() {
 
   if (editingSalesRow) payload.row = editingSalesRow;
 
+  const saveBtn = document.getElementById("saveSalesBtn");
+  const originalBtnHtml = saveBtn.innerHTML;
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; vertical-align: middle; margin-right: 6px;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Saving...`;
+
   fetch(API_URL, {
     method: "POST",
     body: JSON.stringify(payload),
-  }).then(() => {
-    showCustomAlert(
-      editingSalesRow
-        ? "The sale has been successfully updated."
-        : "The sale has been successfully recorded.",
-      editingSalesRow ? "Sale Updated!" : "Sale Saved!",
-      "success",
-    );
-    document.getElementById("qty").value = "";
-    document.getElementById("amount").value = "";
+  })
+    .then((res) => {
+      showCustomAlert(
+        editingSalesRow
+          ? "The sale has been successfully updated."
+          : "The sale has been successfully recorded.",
+        editingSalesRow ? "Sale Updated!" : "Sale Saved!",
+        "success",
+      );
+      document.getElementById("qty").value = "";
+      if (document.getElementById("weight"))
+        document.getElementById("weight").value = "";
+      document.getElementById("amount").value = "";
+      document.getElementById("date").value = "";
+      document.getElementById("date").type = "text"; // Restore placeholder
 
-    // Reset Edit State
-    editingSalesRow = null;
-    document.getElementById("saveSalesBtn").innerHTML = "💾 Save Sale";
-    loadSalesData(true); // Force refresh on save
-  });
+      // Reset Edit State
+      editingSalesRow = null;
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Save Sale`;
+
+      localStorage.removeItem("inventoryData"); // Invalidate inventory cache
+      localStorage.removeItem("salesData"); // Force dashboard to fetch fresh sales data
+      loadSalesData(true); // Force refresh on save
+    })
+    .catch(() => {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalBtnHtml;
+      showCustomAlert("Error saving sale. Please try again.", "Error", "error");
+    });
 }
 
 function editSales(row) {
@@ -66,9 +107,12 @@ function editSales(row) {
   if (!item) return;
 
   document.getElementById("product").value = item.product;
+  if (document.getElementById("weight"))
+    document.getElementById("weight").value = item.weight || "";
   document.getElementById("qty").value = item.qty;
   document.getElementById("amount").value = item.amount;
   document.getElementById("payment").value = item.payment;
+  document.getElementById("date").type = "date"; // Force correct date handling type
 
   let d = parseCustomDate(item.date);
   if (!isNaN(d)) {
@@ -81,7 +125,8 @@ function editSales(row) {
   }
 
   editingSalesRow = row;
-  document.getElementById("saveSalesBtn").innerHTML = "🔄 Update Sale";
+  document.getElementById("saveSalesBtn").innerHTML =
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Update Sale`;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -98,6 +143,8 @@ function deleteSales(row) {
     body: JSON.stringify({ action: "delete_sales", row: row }),
   }).then(() => {
     showCustomAlert("The sale entry has been deleted.", "Deleted", "success");
+    localStorage.removeItem("inventoryData"); // Invalidate inventory cache
+    localStorage.removeItem("salesData");
     loadSalesData(true);
   });
 }
@@ -162,17 +209,22 @@ function renderSalesTable() {
   pageData.forEach((r) => {
     const d = parseCustomDate(r.date);
     const dateStr = !isNaN(d) ? d.toLocaleDateString("en-GB") : r.date;
+    const productDisplay = r.weight ? `${r.product} (${r.weight})` : r.product;
 
     tbody.innerHTML += `
       <tr>
-        <td>${dateStr}</td>
-        <td>${r.product}</td>
-        <td style="text-align: right; font-weight: 500;">${r.qty}</td>
-        <td style="text-align: right;">${r.amount}</td>
-        <td><span class="badge">${r.payment}</span></td>
-        <td style="text-align: center;">
-          <button onclick="editSales(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none;" title="Edit">✏️</button>
-          <button onclick="deleteSales(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--danger); color: var(--danger); box-shadow: none;" title="Delete">🗑️</button>
+        <td data-label="Date">${dateStr}</td>
+        <td data-label="Product">${productDisplay}</td>
+        <td data-label="Qty" style="text-align: right; font-weight: 500;">${r.qty}</td>
+        <td data-label="Amount" style="text-align: right; font-weight: 600; color: var(--primary);">${r.amount}</td>
+        <td data-label="Payment"><span class="badge">${r.payment}</span></td>
+        <td data-label="Actions" style="text-align: center;">
+          <button onclick="editSales(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--border); color: var(--text-main); box-shadow: none; display: inline-flex; align-items: center; justify-content: center;" title="Edit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </button>
+          <button onclick="deleteSales(${r.row})" style="width: auto; padding: 6px 12px; margin: 0 4px; background: transparent; border: 1px solid var(--danger); color: var(--danger); box-shadow: none; display: inline-flex; align-items: center; justify-content: center;" title="Delete">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
         </td>
       </tr>`;
   });
@@ -212,12 +264,12 @@ function nextPage() {
 }
 
 function downloadSalesExcel() {
-  let csv = ["Date,Product,Qty,Amount,Payment"];
+  let csv = ["Date,Product,Weight,Qty,Amount,Payment"];
   filteredSales.forEach((r) => {
     const d = parseCustomDate(r.date);
     const dateStr = !isNaN(d) ? d.toLocaleDateString("en-GB") : r.date;
     csv.push(
-      `"${dateStr}","${r.product}","${r.qty}","${r.amount}","${r.payment}"`,
+      `"${dateStr}","${r.product}","${r.weight || ""}","${r.qty}","${r.amount}","${r.payment}"`,
     );
   });
   const blob = new Blob([csv.join("\n")], { type: "text/csv" });

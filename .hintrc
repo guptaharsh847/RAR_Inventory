@@ -17,6 +17,20 @@
     ],
     "apple-touch-icons": "off",
     "no-inline-styles": "off",
-    "compat-api/html": "off"
+    "compat-api/html": "off",
+    "axe/forms": [
+      "default",
+      {
+        "label": "off"
+      }
+    ],
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "-webkit-overflow-scrolling"
+        ]
+      }
+    ]
   }
 }

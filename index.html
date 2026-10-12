@@ -1,12 +1,13 @@
 <!doctype html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>IMS Login</title>
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="assets/logo.png" />
-    <meta name="theme-color" content="#4f46e5" />
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <meta name="theme-color" content="#4f46e5">
   </head>
 
   <body>
@@ -15,13 +16,22 @@
         <div class="login-card">
           <img src="assets/logo.png" class="logo" alt="IMS Logo" />
           <h2>Welcome Back</h2>
-          <p class="subtitle">Log in to manage your inventory</p>
-          <input id="email" type="email" placeholder="Email Address" />
-          <input id="password" type="password" placeholder="Password" />
-          <button onclick="login()">Sign In</button>
-          <!-- <p>
-            <a href="forgot.html">Forgot Password?</a>
-          </p> -->
+          <p class="subtitle">Enter your 6-digit PIN to securely log in</p>
+          <div class="pin-container" id="pinContainer">
+            <input
+              type="password"
+              class="pin-box"
+              maxlength="1"
+              id="pin1"
+              autofocus
+            />
+            <input type="password" class="pin-box" maxlength="1" id="pin2" />
+            <input type="password" class="pin-box" maxlength="1" id="pin3" />
+            <input type="password" class="pin-box" maxlength="1" id="pin4" />
+            <input type="password" class="pin-box" maxlength="1" id="pin5" />
+            <input type="password" class="pin-box" maxlength="1" id="pin6" />
+          </div>
+          <button id="loginBtn" onclick="login()">Sign In</button>
         </div>
       </div>
 
@@ -49,6 +59,31 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+      // PIN Box auto-focus logic
+      const pinBoxes = document.querySelectorAll(".pin-box");
+      pinBoxes.forEach((box, index) => {
+        box.addEventListener("input", (e) => {
+          if (e.target.value.length === 1 && index < pinBoxes.length - 1) {
+            pinBoxes[index + 1].focus();
+          }
+        });
+        box.addEventListener("keydown", (e) => {
+          if (
+            e.key === "Backspace" &&
+            e.target.value.length === 0 &&
+            index > 0
+          ) {
+            pinBoxes[index - 1].focus();
+          } else if (
+            e.key === "Enter" &&
+            index === pinBoxes.length - 1 &&
+            e.target.value.length === 1
+          ) {
+            login();
+          }
+        });
+      });
+
       // Carousel Logic
       const carouselContainer = document.getElementById("carouselContainer");
       let carouselHTML = "";
