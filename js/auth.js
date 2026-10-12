@@ -46,7 +46,7 @@ async function login() {
           Date.now() + 7 * 24 * 60 * 60 * 1000,
         );
 
-        window.location = "campaign.html";
+        window.location = "dashboard.html";
       } else {
         showCustomAlert("Please check your PIN.", "Invalid Login", "error");
         document.querySelectorAll(".pin-box").forEach((b) => (b.value = ""));

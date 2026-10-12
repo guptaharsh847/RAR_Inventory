@@ -1,93 +1,58 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
-    <link rel="stylesheet" href="css/style.css">
-    <title>IMS Labels</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Labels · Roast and Root</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/logo.png">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#1d1511">
+    <link rel="stylesheet" href="css/style.css">
   </head>
-  <body>
-    <!-- Mobile Top Header -->
-    <div class="top-header">
-      <button
-        class="menu-toggle"
-        aria-label="Open Menu"
-        onclick="toggleSidebar()"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="24"
-          height="24"
-          stroke="currentColor"
-          stroke-width="2"
-          fill="none"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
-      <div class="header-title">IMS Labels</div>
-    </div>
+  <body data-title="Labels">
+    <script src="js/nav.js"></script>
 
-    <!-- Sidebar Overlay -->
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-
-    <div class="sidebar" id="sidebar">
-      <div class="logo">
-        <img src="assets/logo.png" alt="IMS Logo" />
-        <h3>IMS</h3>
-      </div>
-      <a href="campaign.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg> Festive Mail</a>
-      <a href="labels.html" class="active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg> Labels</a>
-      <a onclick="logout()" style="margin-top: auto; cursor: pointer; color: #ef4444">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Logout
-      </a>
-    </div>
-
-    <div class="content">
-      <div class="dashboard-header">
+    <main class="content">
+      <div class="page-header">
         <div>
-          <h2 class="page-title">Label Generator</h2>
-          <p class="subtitle">Generate custom labels from template</p>
+          <h1 class="page-title">Label Generator</h1>
+          <p class="subtitle">Fill in the details and download a ready-to-print label sheet</p>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Label Details</h3>
-        <input
-          id="weight"
-          placeholder="Net Weight (e.g. 500g)"
-          title="Enter Net Weight"
-        />
-        <input id="mrp" placeholder="MRP Price" title="Enter MRP" />
-        <input type="text" id="mfd" placeholder="DD-MM-YYYY" onfocus="(this.type='date')" onblur="(this.value ? this.type='date' : this.type='text')" title="Select Manufacturing Date" />
-        <input id="batch" placeholder="Batch No" title="Enter Batch Number" />
-        <button onclick="generate()" style="display: flex; justify-content: center; gap: 8px; align-items: center;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Generate Labels
+      <div class="card label-card">
+        <h3>Label details</h3>
+        <div class="form-grid">
+          <div>
+            <label class="field-label" for="weight">Net weight</label>
+            <input id="weight" placeholder="e.g. 500g" />
+          </div>
+          <div>
+            <label class="field-label" for="mrp">MRP</label>
+            <input id="mrp" placeholder="e.g. 499" />
+          </div>
+          <div>
+            <label class="field-label" for="mfd">Manufacturing date</label>
+            <input type="text" id="mfd" placeholder="DD-MM-YYYY" onfocus="(this.type='date')" onblur="(this.value ? this.type='date' : this.type='text')" />
+          </div>
+          <div>
+            <label class="field-label" for="batch">Batch no.</label>
+            <input id="batch" placeholder="e.g. RR-1024" />
+          </div>
+        </div>
+        <button type="button" onclick="generate()" class="btn-send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Generate labels
         </button>
       </div>
-    </div>
+    </main>
 
     <script src="https://unpkg.com/pizzip@3.1.7/dist/pizzip.js"></script>
     <script src="https://unpkg.com/docxtemplater@3.40.2/build/docxtemplater.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/labels.js"></script>
-    <script>
-      function logout() {
-        localStorage.removeItem("token");
-        window.location = "index.html";
-      }
-
-      function toggleSidebar() {
-        document.getElementById("sidebar").classList.toggle("active");
-        document.querySelector(".sidebar-overlay").classList.toggle("active");
-      }
-    </script>
   </body>
 </html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Customers · Roast and Root</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/icon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1d1511">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body data-title="Customers">
+    <script src="js/nav.js"></script>
+
+
+    <main class="content">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Customers</h1>
+          <p class="subtitle">Everyone who receives your offer emails</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-secondary" id="importBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Import Excel / CSV
+          </button>
+          <button type="button" class="btn-primary-sm" id="addBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add customer
+          </button>
+        </div>
+      </div>
+
+      <!-- Connection problem -->
+      <div class="card error-banner" id="statusError" hidden>
+        <div class="error-banner-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </div>
+        <div class="error-banner-body">
+          <h4 id="statusErrorTitle"></h4>
+          <p id="statusErrorText"></p>
+          <ol id="statusErrorSteps"></ol>
+          <div class="error-banner-actions">
+            <button type="button" class="btn-secondary" onclick="loadCustomers()">Try again</button>
+            <details>
+              <summary>Technical details</summary>
+              <code id="statusErrorRaw"></code>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mini-stats">
+        <div><span id="statTotal">–</span><label>Total</label></div>
+        <div><span id="statSubscribed">–</span><label>Subscribed</label></div>
+        <div><span id="statUnsubscribed">–</span><label>Unsubscribed</label></div>
+        <div><span id="statNoName">–</span><label>No name</label></div>
+      </div>
+
+      <div class="card">
+        <div class="list-toolbar">
+          <input id="search" type="search" placeholder="Search name, email, phone or city" autocomplete="off" />
+          <select id="filter" aria-label="Filter customers">
+            <option value="all">All customers</option>
+            <option value="subscribed">Subscribed</option>
+            <option value="unsubscribed">Unsubscribed</option>
+          </select>
+        </div>
+        <div id="customerList" class="cust-list">
+          <div class="list-empty">Loading customers…</div>
+        </div>
+        <button type="button" class="btn-secondary show-more" id="showMore" hidden>Show more</button>
+      </div>
+    </main>
+
+    <!-- Add / edit customer -->
+    <div class="custom-alert-overlay" id="customerModal">
+      <form class="custom-alert-box form-box" id="customerForm" novalidate>
+        <h3 id="customerModalTitle">Add customer</h3>
+        <label class="field-label" for="cName">Name</label>
+        <input id="cName" maxlength="80" placeholder="e.g. Priya Sharma" autocomplete="off" />
+        <label class="field-label" for="cEmail">Email <span class="required">*</span></label>
+        <input id="cEmail" type="email" maxlength="120" placeholder="priya@example.com" autocomplete="off" />
+        <div id="cPhoneWrap">
+          <label class="field-label" for="cPhone">Phone</label>
+          <input id="cPhone" type="tel" maxlength="20" placeholder="+91 98765 43210" autocomplete="off" />
+        </div>
+        <div id="cCityWrap">
+          <label class="field-label" for="cCity">City</label>
+          <input id="cCity" maxlength="60" placeholder="e.g. Delhi" autocomplete="off" />
+        </div>
+        <p class="form-error" id="customerFormError" hidden></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn-secondary" data-close>Cancel</button>
+          <button type="submit" id="customerSave">Save</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Import -->
+    <div class="custom-alert-overlay" id="importModal">
+      <div class="custom-alert-box form-box import-box">
+        <h3>Import customers</h3>
+        <p>Upload an Excel or CSV file with an <b>Email</b> column. Name, Phone and City are picked up too.</p>
+
+        <div id="importPick">
+          <div class="dropzone" id="importDrop" tabindex="0">
+            <input type="file" id="importFile" accept=".xlsx,.xls,.csv" hidden />
+            <div class="dropzone-empty">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+              <p><strong>Click to choose a file</strong> or drag &amp; drop</p>
+              <span>.xlsx, .xls or .csv</span>
+            </div>
+          </div>
+          <button type="button" class="btn-link sample-link" id="sampleBtn">Download a sample file</button>
+        </div>
+
+        <div id="importReview" hidden>
+          <div class="import-summary" id="importSummary"></div>
+          <div class="import-preview" id="importPreview"></div>
+        </div>
+
+        <div class="confirm-actions">
+          <button type="button" class="btn-secondary" data-close>Cancel</button>
+          <button type="button" id="importGo" disabled>Import</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/customers.js"></script>
+  </body>
+</html>

@@ -1,25 +1,14 @@
-// Festive Mail – compose a festival offer and send it to every customer in the sheet.
+// Festive Mail – compose a festival/sale email and send it to every customer.
 // The email HTML is built here (so the preview is exactly what customers get);
-// the backend swaps {{NAME}} per recipient and attaches the image as cid:offerImage.
+// the backend swaps {{NAME}} and {{UNSUBSCRIBE_URL}} per recipient and attaches
+// the poster as cid:offerImage. Brand name and links come from the Settings page.
 
-// ======== Brand details – edit these ========
-const BRAND = "Roast and Roots";
 const BRAND_LOGO = "assets/logo.png";
-// The "Order Now" button opens this unless a campaign sets its own link.
-const WEBSITE_URL = "";
-// Shown in the email footer. Leave a url "" to hide that link.
-const SOCIAL_LINKS = [
-  { label: "Website", url: WEBSITE_URL },
-  { label: "Instagram", url: "" }, // https://instagram.com/yourhandle
-  { label: "Facebook", url: "" }, // https://facebook.com/yourpage
-  { label: "WhatsApp", url: "" }, // https://wa.me/91XXXXXXXXXX
-  { label: "YouTube", url: "" }, // https://youtube.com/@yourchannel
-];
-// ============================================
-
-const SAMPLE_NAME = "Priya";
+const SAMPLE_NAME = "Harsh";
 const MAX_IMAGE_WIDTH = 1200;
 const DEFAULT_OFFER_HEADLINE = "A Special Offer Just For You";
+const SETTINGS_CACHE_KEY = "rr_settings";
+const DEFAULT_SETTINGS = { senderName: "Roast and Root", defaultName: "Valued Customer", website: "", instagram: "", facebook: "", whatsapp: "", youtube: "" };
 
 const THEMES = {
   cocoa: { label: "Roast Cocoa", primary: "#5b3417", accent: "#c8922a", soft: "#faf5ef", deco: "☕" },
@@ -43,22 +32,39 @@ const FESTIVALS = [
 
 const state = {
   mode: "festival", // "festival" | "offer"
+  when: "now", // "now" | "later"
   theme: "saffron",
+  settings: loadCachedSettings(),
   logo: null, // { base64, mime }
   image: null, // { base64, mime, name, dataUrl }
   subjectEdited: false,
   status: null,
-  paused: false,
+  statusError: null,
+  paused: null, // null = keep sending, "background" or "pause" = stop the page loop
+  background: false,
   sending: false,
 };
 
-const $ = (id) => document.getElementById(id);
+function loadCachedSettings() {
+  try {
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || "{}") };
+  } catch (e) {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function socialLinks() {
+  const s = state.settings;
+  return [
+    { label: "Website", url: s.website },
+    { label: "Instagram", url: s.instagram },
+    { label: "Facebook", url: s.facebook },
+    { label: "WhatsApp", url: s.whatsapp },
+    { label: "YouTube", url: s.youtube },
+  ].filter((l) => /^https?:\/\//i.test(l.url || ""));
+}
 
 // ---------------- Template ----------------
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-}
 
 function messageToHtml(text) {
   return text
@@ -74,7 +80,7 @@ function safeUrl(url) {
 
 function buildEmailHtml({ mode, occasion, message, themeKey, imageSrc, logoSrc, orderUrl }) {
   const t = THEMES[themeKey];
-  const brand = escapeHtml(BRAND);
+  const brand = escapeHtml(state.settings.senderName);
   const festive = mode === "festival";
   const headline = festive ? `Happy ${escapeHtml(occasion || "Festival")}!` : escapeHtml(occasion);
   const subline = festive ? `Warm wishes from all of us at ${brand}` : `Handpicked for you by ${brand}`;
@@ -87,7 +93,7 @@ function buildEmailHtml({ mode, occasion, message, themeKey, imageSrc, logoSrc, 
   const logo = logoSrc
     ? `<img src="${logoSrc}" alt="${brand}" height="64" style="display:block;height:64px;width:auto;border:0;margin:0 auto 8px;">`
     : "";
-  const socials = SOCIAL_LINKS.filter((l) => /^https?:\/\//i.test(l.url))
+  const socials = socialLinks()
     .map((l) => `<a href="${safeUrl(l.url)}" target="_blank" style="color:${t.primary};text-decoration:none;font-weight:600;">${escapeHtml(l.label)}</a>`)
     .join(`<span style="color:#d1d5db;">&nbsp;&nbsp;•&nbsp;&nbsp;</span>`);
 
@@ -124,7 +130,8 @@ function buildEmailHtml({ mode, occasion, message, themeKey, imageSrc, logoSrc, 
   </td></tr>
   <tr><td align="center" style="background:${t.soft};padding:22px 24px;font-size:12px;line-height:1.6;color:#6b7280;">
     ${socials ? `<div style="font-size:13px;margin-bottom:10px;">${socials}</div>` : ""}
-    You're receiving this ${festive ? "festive greeting" : "offer"} because you're a valued customer of ${brand}.
+    You're receiving this ${festive ? "festive greeting" : "offer"} because you're a valued customer of ${brand}.<br>
+    Don't want these emails? <a href="{{UNSUBSCRIBE_URL}}" target="_blank" style="color:#6b7280;text-decoration:underline;">Unsubscribe</a>
   </td></tr>
 </table>
 </td></tr>
@@ -140,14 +147,15 @@ function currentFields() {
     message: $("message").value,
     subject: $("subject").value.trim(),
     themeKey: state.theme,
-    orderUrl: $("orderLink").value.trim() || WEBSITE_URL,
+    orderUrl: $("orderLink").value.trim() || state.settings.website,
   };
 }
 
 function defaultSubject(f) {
   const deco = THEMES[state.theme].deco;
-  if (f.mode === "offer") return `${deco} {{NAME}}, ${f.occasion} from ${BRAND}`;
-  return f.occasion ? `${deco} Happy ${f.occasion}, {{NAME}}! A special offer from ${BRAND}` : "";
+  const brand = state.settings.senderName;
+  if (f.mode === "offer") return `${deco} {{NAME}}, ${f.occasion} from ${brand}`;
+  return f.occasion ? `${deco} Happy ${f.occasion}, {{NAME}}! A special offer from ${brand}` : "";
 }
 
 function renderPreview() {
@@ -160,11 +168,23 @@ function renderPreview() {
     ...f,
     imageSrc: state.image && state.image.dataUrl,
     logoSrc: new URL(BRAND_LOGO, location.href).href,
-  }).replace(/\{\{NAME\}\}/g, SAMPLE_NAME);
+  })
+    .replace(/\{\{NAME\}\}/g, SAMPLE_NAME)
+    .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, "#");
   $("previewIframe").srcdoc = html;
   $("previewSubject").textContent = (f.subject || "Subject").replace(/\{\{NAME\}\}/g, SAMPLE_NAME);
-  $("previewFrom").textContent = BRAND;
+  $("previewFrom").textContent = state.settings.senderName;
   $("previewName").textContent = SAMPLE_NAME;
+  $("orderLink").placeholder = state.settings.website ? `Defaults to ${state.settings.website}` : "https://your-website.com/shop";
+}
+
+function applySettings(settings) {
+  state.settings = { ...DEFAULT_SETTINGS, ...settings };
+  try {
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(state.settings));
+  } catch (e) {}
+  $("defaultNameHint").textContent = state.settings.defaultName;
+  renderPreview();
 }
 
 function setMode(mode) {
@@ -225,6 +245,42 @@ function setTheme(key) {
   state.theme = key;
   document.querySelectorAll(".swatch").forEach((s) => s.classList.toggle("active", s.dataset.theme === key));
   renderPreview();
+}
+
+// datetime-local inputs want local time as "YYYY-MM-DDTHH:mm".
+function toLocalInputValue(date) {
+  const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0, 16);
+}
+
+function setWhen(when) {
+  state.when = when;
+  document.querySelectorAll("#whenToggle button").forEach((b) => b.classList.toggle("active", b.dataset.when === when));
+  $("scheduleBox").hidden = when !== "later";
+  if (when === "later") {
+    $("scheduleAt").min = toLocalInputValue(new Date(Date.now() + 5 * 60000));
+    if (!$("scheduleAt").value) {
+      const tomorrow9 = new Date();
+      tomorrow9.setDate(tomorrow9.getDate() + 1);
+      tomorrow9.setHours(9, 0, 0, 0);
+      $("scheduleAt").value = toLocalInputValue(tomorrow9);
+    }
+  }
+  updateSendButton();
+}
+
+function formatWhen(d) {
+  return new Date(d).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function updateSendButton() {
+  if (state.when === "later") {
+    const at = $("scheduleAt").value;
+    $("sendBtnText").textContent = at ? `Schedule for ${formatWhen(at)}` : "Schedule";
+    return;
+  }
+  const total = state.status ? state.status.recipients.total : null;
+  $("sendBtnText").textContent = total === null ? "Send to customers" : `Send to ${total} customer${total === 1 ? "" : "s"}`;
 }
 
 function compressImage(file) {
@@ -315,7 +371,9 @@ async function loadStatus({ silent = false } = {}) {
     const data = await apiPost("email_status");
     state.status = data;
     state.statusError = null;
+    state.background = data.background;
     $("statusError").hidden = true;
+    applySettings(data.settings);
     renderStatus();
     if (!silent && data.quota.left === 0) showQuotaDone();
   } catch (err) {
@@ -324,71 +382,8 @@ async function loadStatus({ silent = false } = {}) {
   }
 }
 
-// Turn backend/network errors into plain-language explanations with fix steps.
-function friendlyError(raw) {
-  const redeploy = "In the editor: Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy.";
-  if (/permission to call|authoriz|Required permissions/i.test(raw)) {
-    const what = /DriveApp/i.test(raw) ? "save posters to Google Drive" : /Spreadsheet/i.test(raw) ? "read the customer sheet" : "send email from your Google account";
-    return {
-      title: "Google permission needed",
-      text: `The Apps Script hasn't been allowed to ${what} yet. This is a one-time setup step.`,
-      steps: [
-        "Open the spreadsheet → Extensions → Apps Script.",
-        "Choose the authorize function in the toolbar and click Run.",
-        "On Google's permission screen, tick Select all, then click Allow.",
-        redeploy,
-        "Come back here and click Try again.",
-      ],
-    };
-  }
-  if (/customer sheet/i.test(raw)) {
-    return {
-      title: "Customer sheet not found",
-      text: "The app couldn't find the CUSTOMERS tab in your spreadsheet.",
-      steps: ["Open the spreadsheet and make sure a tab named CUSTOMERS exists.", "Row 1 must contain an Email column.", "Click Try again."],
-    };
-  }
-  if (/unexpected response|Unknown action/i.test(raw)) {
-    return {
-      title: "The mail server needs updating",
-      text: "The Apps Script running online is an older version than this page expects.",
-      steps: ["Paste the latest Code.gs into the Apps Script editor and save.", redeploy, "Click Try again."],
-    };
-  }
-  if (/failed to fetch|network|load failed/i.test(raw)) {
-    return {
-      title: "Can't connect",
-      text: "The page couldn't reach the server. Check your internet connection.",
-      steps: ["Make sure you're online.", "Click Try again."],
-    };
-  }
-  return {
-    generic: true,
-    title: "Couldn't load your customers",
-    text: "Something went wrong while reading the spreadsheet.",
-    steps: ["Click Try again.", "If it keeps happening, share the technical details below with your developer."],
-  };
-}
-
-// Pop-up for errors during test/send. Known problems get fix steps; anything
-// else (e.g. "Enter a valid test email address.") is already readable as-is.
-function showFriendlyError(err, title, extra = "") {
-  const raw = (err && err.message) || String(err);
-  const f = friendlyError(raw);
-  const body = f.generic
-    ? escapeHtml(raw)
-    : `${escapeHtml(f.text)}<ol class="alert-steps">${f.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>`;
-  showCustomAlert(body + (extra ? `<br><br>${extra}` : ""), f.generic ? title : f.title, "error");
-}
-
 function renderStatusError(raw) {
-  const f = friendlyError(raw);
-  $("statusErrorTitle").textContent = f.title;
-  $("statusErrorText").textContent = f.text;
-  $("statusErrorSteps").innerHTML = f.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("");
-  $("statusErrorRaw").textContent = raw;
-  $("statusError").hidden = false;
-
+  renderErrorBanner(raw, "Couldn't load your customers");
   const ring = $("quotaRing");
   ring.style.setProperty("--pct", 0);
   ring.classList.remove("low", "empty");
@@ -400,7 +395,7 @@ function renderStatusError(raw) {
 }
 
 function renderStatus() {
-  const { quota, recipients, campaigns } = state.status;
+  const { quota, recipients } = state.status;
   const pct = quota.limit ? (quota.left / quota.limit) * 100 : 0;
   const ring = $("quotaRing");
   ring.style.setProperty("--pct", pct);
@@ -410,64 +405,56 @@ function renderStatus() {
   $("quotaText").textContent = quota.left === 0 ? "Today's quota completed" : `${quota.left} of ${quota.limit} emails left`;
   $("quotaSub").textContent = quota.left === 0 ? "Sending resumes after midnight" : `${quota.sentToday} sent today · resets at midnight`;
 
-  $("recipientText").textContent = `${recipients.total} with valid email`;
-  $("recipientSub").textContent =
-    recipients.total > quota.limit
-      ? `Takes ~${Math.ceil(recipients.total / quota.limit)} days at the daily limit`
-      : `From sheet "${recipients.sheet}"` + (recipients.withoutName ? ` · ${recipients.withoutName} without a name` : "");
+  $("recipientText").textContent = `${recipients.total} subscribed`;
+  const parts = [];
+  if (recipients.unsubscribed) parts.push(`${recipients.unsubscribed} unsubscribed`);
+  if (recipients.total > quota.limit) parts.push(`~${Math.ceil(recipients.total / quota.limit)} days at the daily limit`);
+  else if (recipients.withoutName) parts.push(`${recipients.withoutName} without a name`);
+  $("recipientSub").innerHTML = (parts.length ? escapeHtml(parts.join(" · ")) + " · " : "") + `<a href="customers.html">Manage</a>`;
 
-  const pending = campaigns.filter((c) => c.pending > 0 && c.handled > 0);
-  $("pendingCard").style.display = pending.length ? "" : "none";
-  $("pendingList").innerHTML = pending
-    .map(
-      (c) => `<div class="pending-row">
-        <div>
-          <strong>${escapeHtml(c.festival)}</strong>
-          <span>${c.handled} sent · ${c.pending} remaining · started ${new Date(c.created).toLocaleDateString()}</span>
+  renderCampaigns();
+  updateSendButton();
+}
+
+function renderCampaigns() {
+  const active = state.status.campaigns.filter(
+    (c) => c.status === "SCHEDULED" || (c.status === "SENDING" && c.pending > 0) || (c.status === "PAUSED" && c.pending > 0 && c.handled > 0),
+  );
+  $("campaignsCard").hidden = active.length === 0;
+  $("campaignsList").innerHTML = active
+    .map((c) => {
+      const name = `<strong>${escapeHtml(c.festival)}</strong>`;
+      const data = `data-id="${escapeHtml(c.id)}" data-festival="${escapeHtml(c.festival)}"`;
+      if (c.status === "SCHEDULED") {
+        return `<div class="pending-row">
+          <div>${name} <span class="pill pill-blue">Scheduled</span>
+            <span>Sends ${escapeHtml(formatWhen(c.scheduledAt))} to ${c.pending} customer${c.pending === 1 ? "" : "s"}</span></div>
+          <div class="row-actions"><button type="button" class="btn-secondary" data-act="cancel" ${data}>Cancel</button></div>
+        </div>`;
+      }
+      const sending = c.status === "SENDING";
+      return `<div class="pending-row">
+        <div>${name} <span class="pill ${sending ? "pill-green" : "pill-amber"}">${sending ? "Sending in background" : "Paused"}</span>
+          <span>${c.handled} sent · ${c.pending} left${sending ? " · continues automatically" : ""}</span></div>
+        <div class="row-actions">
+          ${sending ? `<button type="button" class="btn-secondary" data-act="pause" ${data}>Pause</button>` : ""}
+          <button type="button" class="btn-secondary" data-act="run" ${data}>${sending ? "Send now" : "Resume"}</button>
+          ${sending ? "" : `<button type="button" class="btn-link" data-act="cancel" ${data}>Cancel</button>`}
         </div>
-        <button type="button" class="btn-secondary" data-id="${escapeHtml(c.id)}" data-festival="${escapeHtml(c.festival)}">Resume</button>
-      </div>`,
-    )
+      </div>`;
+    })
     .join("");
-
-  $("sendBtnText").textContent = `Send to ${recipients.total} customer${recipients.total === 1 ? "" : "s"}`;
 }
 
 function showQuotaDone(pending) {
-  const extra = pending
-    ? `<br><br><b>${pending}</b> customer${pending === 1 ? " is" : "s are"} still waiting. Come back tomorrow and press <b>Resume</b> — nobody will get the email twice.`
-    : "<br><br>You can send again after midnight.";
-  showCustomAlert(
-    `You've used today's sending limit to keep your Gmail account safe from being blocked.${extra}`,
-    "Today's quota completed",
-    "error",
-  );
-}
-
-// ---------------- Confirm dialog ----------------
-
-function showConfirm(message, title, okText) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "custom-alert-overlay";
-    overlay.innerHTML = `<div class="custom-alert-box">
-        <h3>${title}</h3>
-        <p>${message}</p>
-        <div class="confirm-actions">
-          <button type="button" class="btn-secondary" data-ok="0">Cancel</button>
-          <button type="button" data-ok="1">${okText}</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add("show"));
-    overlay.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-ok]");
-      if (!btn) return;
-      overlay.classList.remove("show");
-      setTimeout(() => overlay.remove(), 300);
-      resolve(btn.dataset.ok === "1");
-    });
-  });
+  let extra = "<br><br>You can send again after midnight.";
+  if (pending) {
+    const who = `<b>${pending}</b> customer${pending === 1 ? " is" : "s are"} still waiting.`;
+    extra = state.background
+      ? `<br><br>${who} They'll be sent <b>automatically after midnight</b> — you can close this page. Nobody gets the email twice.`
+      : `<br><br>${who} Come back tomorrow and press <b>Resume</b> — nobody gets the email twice.`;
+  }
+  showCustomAlert(`You've used today's sending limit to keep your Gmail account safe from being blocked.${extra}`, "Today's quota completed", "error");
 }
 
 // ---------------- Sending ----------------
@@ -485,7 +472,7 @@ function validate() {
   }
   if (!/^https?:\/\//i.test(f.orderUrl)) {
     showCustomAlert(
-      'The "Order Now" button needs a link starting with https://. Fill in the Order Now link, or set WEBSITE_URL in js/campaign.js.',
+      'The "Order Now" button needs a link. Add your website on the <a href="settings.html">Settings</a> page, or fill in the Order Now link here.',
       "Order link missing",
       "error",
     );
@@ -505,16 +492,6 @@ function payloadFor(f) {
     logoBase64: state.logo ? state.logo.base64 : "",
     logoMime: state.logo ? state.logo.mime : "",
   };
-}
-
-function setBusy(btn, busy, text) {
-  btn.disabled = busy;
-  if (busy) {
-    btn.dataset.html = btn.innerHTML;
-    btn.innerHTML = `<span class="spinner"></span> ${text}`;
-  } else if (btn.dataset.html) {
-    btn.innerHTML = btn.dataset.html;
-  }
 }
 
 async function sendTest() {
@@ -540,37 +517,64 @@ async function startCampaign() {
   if (!f) return;
   if (!state.status) await loadStatus({ silent: true });
   if (!state.status) {
-    const f = friendlyError(state.statusError || "");
+    const fe = friendlyError(state.statusError || "");
     $("statusError").scrollIntoView({ behavior: "smooth", block: "start" });
-    return showCustomAlert(`${escapeHtml(f.text)}<br><br>Follow the steps at the top of the page, then try again.`, f.title, "error");
+    return showCustomAlert(`${escapeHtml(fe.text)}<br><br>Follow the steps at the top of the page, then try again.`, fe.generic ? "Can't reach the sheet" : fe.title, "error");
   }
 
   const { quota, recipients } = state.status;
-  if (recipients.total === 0) return showCustomAlert("No customers with a valid email were found in the sheet.", "No recipients", "error");
-  if (quota.left === 0) return showQuotaDone();
+  if (recipients.total === 0) {
+    return showCustomAlert('No subscribed customers with a valid email. Add some on the <a href="customers.html">Customers</a> page.', "No recipients", "error");
+  }
 
-  const now = Math.min(quota.left, recipients.total);
-  const later = recipients.total - now;
-  const ok = await showConfirm(
-    `Send the <b>${escapeHtml(f.occasion)}</b> email to <b>${recipients.total}</b> customer${recipients.total === 1 ? "" : "s"}?` +
+  const who = `<b>${recipients.total}</b> customer${recipients.total === 1 ? "" : "s"}`;
+  let scheduledAt = null;
+  let message;
+
+  if (state.when === "later") {
+    const at = new Date($("scheduleAt").value);
+    if (isNaN(at) || at.getTime() < Date.now() + 60000) {
+      return showCustomAlert("Please pick a time at least a few minutes from now.", "Pick a later time", "error");
+    }
+    scheduledAt = at.toISOString();
+    const days = Math.ceil(recipients.total / quota.limit);
+    message =
+      `Schedule the <b>${escapeHtml(f.occasion)}</b> email to ${who} for <b>${escapeHtml(formatWhen(at))}</b>?` +
+      `<br><br>It's sent automatically within 15 minutes of that time — you don't need to keep the app open.` +
+      (days > 1 ? ` With your daily limit of ${quota.limit}, it finishes over about ${days} days.` : "");
+  } else {
+    if (quota.left === 0) return showQuotaDone();
+    const now = Math.min(quota.left, recipients.total);
+    const later = recipients.total - now;
+    message =
+      `Send the <b>${escapeHtml(f.occasion)}</b> email to ${who} now?` +
       (later
-        ? `<br><br>Today's quota covers <b>${now}</b>. The other <b>${later}</b> will wait — press <b>Resume</b> on another day to finish.`
-        : `<br><br>This uses ${now} of your ${quota.left} emails left today.`),
-    "Ready to send?",
-    "Send now",
-  );
+        ? `<br><br>Today's quota covers <b>${now}</b>. The other <b>${later}</b> are sent automatically after midnight.`
+        : `<br><br>This uses ${now} of your ${quota.left} emails left today.`);
+  }
+
+  const ok = await showConfirm(message, scheduledAt ? "Schedule this email?" : "Ready to send?", scheduledAt ? "Schedule" : "Send now");
   if (!ok) return;
 
   const btn = $("sendBtn");
-  setBusy(btn, true, "Preparing…");
+  setBusy(btn, true, scheduledAt ? "Scheduling…" : "Preparing…");
   try {
-    const res = await apiPost("create_campaign", payloadFor(f));
-    await runCampaign(res.campaignId, f.occasion);
+    const res = await apiPost("create_campaign", { ...payloadFor(f), scheduledAt });
+    if (scheduledAt) {
+      showCustomAlert(
+        `Your <b>${escapeHtml(f.occasion)}</b> email goes out on <b>${escapeHtml(formatWhen(scheduledAt))}</b>. You can cancel it any time under <b>Scheduled &amp; in progress</b>.`,
+        "Scheduled ⏰",
+        "success",
+      );
+      loadStatus({ silent: true });
+    } else {
+      await runCampaign(res.campaignId, f.occasion);
+    }
   } catch (err) {
-    showFriendlyError(err, "Couldn't start sending");
+    showFriendlyError(err, scheduledAt ? "Couldn't schedule" : "Couldn't start sending");
   } finally {
     setBusy(btn, false);
-    renderStatus();
+    updateSendButton();
   }
 }
 
@@ -583,17 +587,19 @@ function logLine(text, ok) {
 
 async function runCampaign(campaignId, festival) {
   state.sending = true;
-  state.paused = false;
+  state.paused = null;
   let sent = 0;
   let failed = 0;
   let pending = 0;
 
   $("progressTitle").textContent = `Sending “${festival}” emails`;
-  $("progressSub").textContent = "Please keep this page open.";
+  $("progressSub").textContent = state.background ? "You can close this page — sending continues in the background." : "Please keep this page open.";
   $("progressLog").innerHTML = "";
   $("progressFill").style.width = "0%";
   ["pSent", "pFailed", "pPending"].forEach((id) => ($(id).textContent = "0"));
-  $("stopBtn").disabled = false;
+  ["bgBtn", "stopBtn"].forEach((id) => ($(id).disabled = false));
+  $("bgBtn").hidden = !state.background;
+  $("bgBtn").textContent = "Continue in background";
   $("stopBtn").textContent = "Pause";
   $("progressModal").classList.add("show");
 
@@ -602,7 +608,8 @@ async function runCampaign(campaignId, festival) {
     while (!state.paused) {
       res = await apiPost("send_batch", { campaignId });
       if (res.status === "busy") {
-        await new Promise((r) => setTimeout(r, 3000));
+        $("progressSub").textContent = res.message;
+        await new Promise((r) => setTimeout(r, 4000));
         continue;
       }
       sent += res.sent;
@@ -619,10 +626,11 @@ async function runCampaign(campaignId, festival) {
 
       if (res.status !== "partial") break;
     }
+    if (state.paused === "pause") await apiPost("pause_campaign", { campaignId });
   } catch (err) {
     $("progressModal").classList.remove("show");
     state.sending = false;
-    showFriendlyError(err, "Sending stopped", "Customers who already got the email are saved — press <b>Resume</b> to continue.");
+    showFriendlyError(err, "Sending stopped", "Customers who already got the email are saved — nobody gets it twice.");
     loadStatus({ silent: true });
     return;
   }
@@ -638,12 +646,42 @@ async function runCampaign(campaignId, festival) {
       "All emails sent 🎉",
       "success",
     );
+  } else if (state.paused === "background") {
+    showCustomAlert(`Sending continues in the background. ${pending} customer${pending === 1 ? "" : "s"} left — track it under <b>Scheduled &amp; in progress</b>.`, "Running in background", "success");
+  } else if (state.paused === "pause") {
+    showCustomAlert(`Paused after ${sent} email${sent === 1 ? "" : "s"}. ${pending} left — press <b>Resume</b> any time.`, "Paused", "info");
   } else if (res && res.status === "quota_exceeded") {
     showQuotaDone(pending);
-  } else {
-    showCustomAlert(`Paused after ${sent} email${sent === 1 ? "" : "s"}. ${pending} remaining — press <b>Resume</b> any time.`, "Paused", "info");
   }
   loadStatus({ silent: true });
+}
+
+async function onCampaignAction(e) {
+  const btn = e.target.closest("button[data-act]");
+  if (!btn || state.sending) return;
+  const { act, id, festival } = btn.dataset;
+
+  if (act === "run") {
+    if (state.status && state.status.quota.left === 0) return showQuotaDone();
+    return runCampaign(id, festival);
+  }
+  if (act === "cancel") {
+    const ok = await showConfirm(
+      `Stop the <b>${escapeHtml(festival)}</b> email? Customers who haven't received it yet won't get it.`,
+      "Cancel this email?",
+      "Yes, cancel",
+      { danger: true },
+    );
+    if (!ok) return;
+  }
+  setBusy(btn, true, "");
+  try {
+    await apiPost(act === "pause" ? "pause_campaign" : "cancel_campaign", { campaignId: id });
+    await loadStatus({ silent: true });
+  } catch (err) {
+    setBusy(btn, false);
+    showFriendlyError(err, "Couldn't update the campaign");
+  }
 }
 
 // ---------------- Init ----------------
@@ -653,12 +691,17 @@ renderSwatches();
 setupDropzone();
 setTheme(state.theme);
 loadLogo();
+$("defaultNameHint").textContent = state.settings.defaultName;
 
 $("modeToggle").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-mode]");
   if (btn && btn.dataset.mode !== state.mode) setMode(btn.dataset.mode);
 });
-$("orderLink").placeholder = WEBSITE_URL ? `Defaults to ${WEBSITE_URL}` : "https://your-website.com/shop";
+$("whenToggle").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-when]");
+  if (btn) setWhen(btn.dataset.when);
+});
+$("scheduleAt").addEventListener("input", updateSendButton);
 $("orderLink").addEventListener("input", renderPreview);
 
 // Grow the preview to the email's full height so nothing is clipped.
@@ -678,18 +721,18 @@ $("subject").addEventListener("input", () => {
 $("testBtn").addEventListener("click", sendTest);
 $("sendBtn").addEventListener("click", startCampaign);
 $("stopBtn").addEventListener("click", () => {
-  state.paused = true;
-  $("stopBtn").disabled = true;
+  state.paused = "pause";
+  ["bgBtn", "stopBtn"].forEach((id) => ($(id).disabled = true));
   $("stopBtn").textContent = "Pausing after this batch…";
 });
-$("pendingList").addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-id]");
-  if (!btn || state.sending) return;
-  if (state.status && state.status.quota.left === 0) return showQuotaDone();
-  runCampaign(btn.dataset.id, btn.dataset.festival);
+$("bgBtn").addEventListener("click", () => {
+  state.paused = "background";
+  ["bgBtn", "stopBtn"].forEach((id) => ($(id).disabled = true));
+  $("bgBtn").textContent = "Handing over after this batch…";
 });
+$("campaignsList").addEventListener("click", onCampaignAction);
 window.addEventListener("beforeunload", (e) => {
-  if (state.sending) e.preventDefault();
+  if (state.sending && !state.background) e.preventDefault();
 });
 
 loadStatus();

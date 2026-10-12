@@ -12,8 +12,8 @@ if (!isLoginPage && !isValidSession) {
   localStorage.removeItem("token_expiry");
   window.location.href = "index.html";
 } else if (isLoginPage && isValidSession) {
-  // If already logged in and on index page, skip to the mail page
-  window.location.href = "campaign.html";
+  // If already logged in and on the sign-in page, go straight to the dashboard
+  window.location.href = "dashboard.html";
 }
 
 const API_URL =
@@ -24,7 +24,8 @@ const API_URL =
 async function apiPost(action, payload = {}) {
   const res = await fetch(API_URL, {
     method: "POST",
-    body: JSON.stringify({ ...payload, action, token: localStorage.getItem("token") }),
+    // appUrl lets the backend build unsubscribe links pointing at this deployment.
+    body: JSON.stringify({ ...payload, action, token: localStorage.getItem("token"), appUrl: API_URL }),
   });
   const text = await res.text();
   let data;
@@ -48,7 +49,7 @@ window.showCustomAlert = function (
   title = "Notification",
   type = "info",
 ) {
-  let icon = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
+  let icon = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`;
   if (type === "success")
     icon = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
   if (type === "error")
