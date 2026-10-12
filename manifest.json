@@ -1,7 +1,7 @@
 {
   "name": "RAR Inventory Management",
   "short_name": "IMS",
-  "description": "Manage your stock, sales, and labels easily.",
+  "description": "Send festive offer emails and generate product labels.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8fafc",

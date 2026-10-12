@@ -12,12 +12,36 @@ if (!isLoginPage && !isValidSession) {
   localStorage.removeItem("token_expiry");
   window.location.href = "index.html";
 } else if (isLoginPage && isValidSession) {
-  // If already logged in and on index page, skip to dashboard
-  window.location.href = "dashboard.html";
+  // If already logged in and on index page, skip to the mail page
+  window.location.href = "campaign.html";
 }
 
 const API_URL =
   "https://script.google.com/macros/s/AKfycbyYlRc_dtcCDZaWxMGrXWh8bnuhkLjL37gDXyYiiEyWvywahO57IbPZWt-RVydqGKI/exec";
+
+// Authenticated POST to the Apps Script backend. Sent as text/plain (no custom
+// headers) so the browser skips the CORS preflight Apps Script can't answer.
+async function apiPost(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ ...payload, action, token: localStorage.getItem("token") }),
+  });
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error("The Apps Script sent back an unexpected response. Check that the latest version is deployed.");
+  }
+  if (data.status === "unauthorized") {
+    localStorage.removeItem("token");
+    localStorage.removeItem("token_expiry");
+    window.location.href = "index.html";
+    throw new Error(data.message);
+  }
+  if (data.status === "error") throw new Error(data.message || "Request failed");
+  return data;
+}
 
 window.showCustomAlert = function (
   message,
